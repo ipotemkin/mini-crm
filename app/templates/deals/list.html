@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Сделки — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Сделки</h1>
+<div class="toolbar">
+  <form method="get">
+    <label>Поиск<input name="q" value="{{ filters.q or '' }}"></label>
+    <label>Группа
+      <select name="group">
+        <option value="open" {% if filters.group=='open' %}selected{% endif %}>Открытые</option>
+        <option value="closed" {% if filters.group=='closed' %}selected{% endif %}>Закрытые</option>
+        <option value="all" {% if filters.group=='all' %}selected{% endif %}>Все</option>
+      </select>
+    </label>
+    <label><span><input type="checkbox" name="no_client" value="true" {% if filters.no_client %}checked{% endif %}> Без клиента</span></label>
+    <button class="btn" type="submit">Применить</button>
+    <a class="btn" href="/deals">Сбросить</a>
+  </form>
+  <a class="btn btn-primary" href="/deals/new">+ Сделка</a>
+  <form method="post" action="/exports/deals"><button class="btn" type="submit">Экспорт</button></form>
+</div>
+<p class="meta">Сумма по выборке: {{ total_amount|fmt_kopecks }}</p>
+{% if not page_data.items %}
+<div class="card empty">Сделок нет — <a href="/deals/new">создайте первую</a></div>
+{% else %}
+<div class="table-wrap"><table>
+<thead><tr><th>Название</th><th>Клиент</th><th>Статус</th><th>Сумма</th><th>План. закрытие</th><th>Изменена</th></tr></thead>
+<tbody>
+{% for d in page_data.items %}
+<tr>
+  <td><a href="/deals/{{ d.id }}">{{ d.title }}</a></td>
+  <td>{% if d.client_id %}<a href="/clients/{{ d.client_id }}">{{ d.client_name }}</a>{% else %}—{% endif %}</td>
+  <td><span class="badge {{ d.status.value }}">{{ DEAL_STATUS_LABELS[d.status.value] }}</span></td>
+  <td>{{ d.amount|fmt_money }}</td>
+  <td>{{ d.expected_close_date|fmt_date or '—' }}</td>
+  <td>{{ d.updated_at|fmt_dt }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+<p class="pagination">стр. {{ page_data.page }}/{{ page_data.pages }} · всего {{ page_data.total }}</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Заказы — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Заказы</h1>
+<div class="toolbar">
+  <form method="get">
+    <label>Поиск<input name="q" value="{{ filters.q or '' }}"></label>
+    <button class="btn" type="submit">Найти</button>
+    <a class="btn" href="/orders">Сбросить</a>
+  </form>
+  <a class="btn btn-primary" href="/orders/new">+ Заказ</a>
+  <form method="post" action="/exports/orders"><button class="btn" type="submit">Экспорт</button></form>
+</div>
+<p class="meta">Сумма по выборке: {{ total_amount|fmt_kopecks }}</p>
+{% if not page_data.items %}
+<div class="card empty">Заказов нет — <a href="/orders/new">создайте первый</a></div>
+{% else %}
+<div class="table-wrap"><table>
+<thead><tr><th>Номер</th><th>Название</th><th>Клиент</th><th>Сделка</th><th>Статус</th><th>Сумма</th><th>Дата</th><th>План</th></tr></thead>
+<tbody>
+{% for o in page_data.items %}
+<tr>
+  <td><a href="/orders/{{ o.id }}">{{ o.number }}</a></td>
+  <td>{{ o.title }}</td>
+  <td>{% if o.client_id %}<a href="/clients/{{ o.client_id }}">{{ o.client_name }}</a>{% else %}—{% endif %}</td>
+  <td>{% if o.deal_id %}<a href="/deals/{{ o.deal_id }}">{{ o.deal_title }}</a>{% else %}—{% endif %}</td>
+  <td><span class="badge {{ o.status.value }}">{{ ORDER_STATUS_LABELS[o.status.value] }}</span></td>
+  <td>{{ o.amount|fmt_money }}</td>
+  <td>{{ o.order_date|fmt_date }}</td>
+  <td>{{ o.due_date|fmt_date or '—' }}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+<p class="pagination">стр. {{ page_data.page }}/{{ page_data.pages }} · всего {{ page_data.total }}</p>
+{% endif %}
+{% endblock %}

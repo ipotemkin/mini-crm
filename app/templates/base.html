@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mini-CRM{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+</head>
+<body>
+  {% if user %}
+  <header class="topbar">
+    <a class="brand" href="/">Mini-CRM</a>
+    <nav class="nav">
+      <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Сегодня</a>
+      <a href="/clients" class="{% if request.url.path.startswith('/clients') %}active{% endif %}">Клиенты</a>
+      <a href="/deals" class="{% if request.url.path.startswith('/deals') %}active{% endif %}">Сделки</a>
+      <a href="/orders" class="{% if request.url.path.startswith('/orders') %}active{% endif %}">Заказы</a>
+      <a href="/tasks" class="{% if request.url.path.startswith('/tasks') %}active{% endif %}">Задачи</a>
+    </nav>
+    <div class="top-actions">
+      <form class="search-box" action="/search" method="get">
+        <input id="global-search" type="search" name="q"
+               placeholder="Поиск (/)" minlength="2"
+               value="{{ request.query_params.get('q', '') }}">
+      </form>
+      {% if reminders %}
+      <a id="reminders-badge" class="reminders {% if reminders.overdue %}has-overdue{% endif %}"
+         href="/" title="Просрочено / сегодня">
+        {{ reminders.overdue }} / {{ reminders.today }}
+      </a>
+      {% endif %}
+      <a href="/settings">
+        Настройки
+        {% if google_status and google_status.status == 'reauth_required' %}
+        <span class="warn-dot" title="Требуется переподключение Google">!</span>
+        {% endif %}
+      </a>
+      <form action="/logout" method="post" style="display:inline">
+        <button class="btn btn-sm" type="submit">Выход</button>
+      </form>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="container">
+    {% if flash %}
+    <div class="flash">{{ flash }}
+      {% if request.query_params.get('export_url') %}
+      <a href="{{ request.query_params.get('export_url') }}" target="_blank" rel="noopener">Открыть файл</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if flash_error %}
+    <div class="flash error">{{ flash_error }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

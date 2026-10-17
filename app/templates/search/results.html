@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Поиск — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Результаты поиска</h1>
+<form class="toolbar" method="get" action="/search">
+  <label>Запрос<input name="q" value="{{ q }}" minlength="2" required></label>
+  <button class="btn btn-primary" type="submit">Искать</button>
+  <form method="post" action="/exports/search?q={{ q }}"><button class="btn" type="submit">Экспорт</button></form>
+</form>
+
+{% if q|length < 2 %}
+<p class="muted">Введите не менее 2 символов</p>
+{% else %}
+<section class="card">
+  <h2>Клиенты ({{ result.clients|length }})</h2>
+  {% for c in result.clients %}
+  <div class="task-line">
+    <a href="/clients/{{ c.id }}"><strong>{{ c.name }}</strong></a>
+    <span class="badge {{ c.status.value }}">{{ CLIENT_STATUS_LABELS[c.status.value] }}</span>
+    {% if c.is_archived %}<span class="badge">В архиве</span>{% endif %}
+  </div>
+  {% else %}<p class="empty">Ничего не найдено</p>{% endfor %}
+</section>
+<section class="card">
+  <h2>Сделки ({{ result.deals|length }})</h2>
+  {% for d in result.deals %}
+  <div class="task-line">
+    <a href="/deals/{{ d.id }}"><strong>{{ d.title }}</strong></a>
+    <span class="badge {{ d.status.value }}">{{ DEAL_STATUS_LABELS[d.status.value] }}</span>
+  </div>
+  {% else %}<p class="empty">Ничего не найдено</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

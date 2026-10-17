@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Задача — Mini-CRM{% endblock %}
+{% block content %}
+<h1>{% if task %}Редактирование задачи{% else %}Новая задача{% endif %}</h1>
+<form class="card stack" method="post" action="{% if task %}/tasks/{{ task.id }}/edit{% else %}/tasks/new{% endif %}">
+  <label>Что сделать *<input name="title" required value="{{ task.title if task else '' }}"></label>
+  <div class="grid-2">
+    <label>Тип
+      <select name="task_type">
+        {% for t in types %}
+        <option value="{{ t.value }}" {% if task and task.task_type==t %}selected{% endif %}>{{ TASK_TYPE_LABELS[t.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Срок (дата)<input type="date" name="due_date"
+      value="{% if task and task.due_at %}{{ task.due_at.strftime('%Y-%m-%d') }}{% endif %}"></label>
+  </div>
+  <div class="grid-2">
+    <label>ID клиента<input type="number" name="client_id"
+      value="{{ task.client_id if task and task.client_id else (client_id or '') }}"></label>
+    <label>ID сделки<input type="number" name="deal_id"
+      value="{{ task.deal_id if task and task.deal_id else (deal_id or '') }}"></label>
+  </div>
+  <label>Описание<textarea name="description">{{ task.description if task else '' }}</textarea></label>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">Сохранить</button>
+    <a class="btn" href="/tasks">Отмена</a>
+  </div>
+</form>
+{% if task %}
+<form method="post" action="/tasks/{{ task.id }}/delete"
+      onsubmit="return confirm('Удалить?')" style="margin-top:0.75rem">
+  <button class="btn btn-danger" type="submit">Удалить</button>
+</form>
+{% endif %}
+{% endblock %}

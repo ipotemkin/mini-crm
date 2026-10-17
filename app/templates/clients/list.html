@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Клиенты — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Клиенты</h1>
+<div class="toolbar">
+  <form method="get">
+    <label>Поиск<input name="q" value="{{ filters.q or '' }}"></label>
+    <label>Архив
+      <select name="archived">
+        <option value="active" {% if filters.archived=='active' %}selected{% endif %}>Активные</option>
+        <option value="archived" {% if filters.archived=='archived' %}selected{% endif %}>Архив</option>
+        <option value="all" {% if filters.archived=='all' %}selected{% endif %}>Все</option>
+      </select>
+    </label>
+    <label>Тип
+      <select name="client_type">
+        <option value="">Любой</option>
+        {% for t in types %}
+        <option value="{{ t.value }}" {% if filters.client_type==t %}selected{% endif %}>{{ CLIENT_TYPE_LABELS[t.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn" type="submit">Применить</button>
+    <a class="btn" href="/clients">Сбросить</a>
+  </form>
+  <a class="btn btn-primary" href="/clients/new">+ Клиент</a>
+  <form method="post" action="/exports/clients">
+    <button class="btn" type="submit">Экспорт в Google Sheets</button>
+  </form>
+</div>
+
+{% if not page_data.items %}
+<div class="card empty">Клиентов пока нет — <a href="/clients/new">добавьте первого</a></div>
+{% else %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Имя</th><th>Контакт</th><th>Телефон</th><th>Email</th>
+      <th>Статус</th><th>Открытых сделок</th><th>Ближайшая задача</th><th>Изменён</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for c in page_data.items %}
+    <tr>
+      <td>
+        <a href="/clients/{{ c.id }}">{{ c.name }}</a>
+        {% if c.is_archived %}<span class="badge">В архиве</span>{% endif %}
+      </td>
+      <td>{{ c.contact_person or '—' }}</td>
+      <td>{{ c.phone or '—' }}</td>
+      <td>{{ c.email or '—' }}</td>
+      <td><span class="badge {{ c.status.value }}">{{ CLIENT_STATUS_LABELS[c.status.value] }}</span></td>
+      <td>{{ c.open_deals_count }}</td>
+      <td>{{ c.next_task_due_at|fmt_dt or '—' }}</td>
+      <td>{{ c.updated_at|fmt_dt }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="pagination">
+  Показано {{ (page_data.page-1)*page_data.page_size+1 }}–{{ (page_data.page-1)*page_data.page_size + page_data.items|length }}
+  из {{ page_data.total }}
+  {% if page_data.page > 1 %}<a href="?page={{ page_data.page-1 }}&q={{ filters.q or '' }}&archived={{ filters.archived }}">←</a>{% endif %}
+  стр. {{ page_data.page }}/{{ page_data.pages }}
+  {% if page_data.page < page_data.pages %}<a href="?page={{ page_data.page+1 }}&q={{ filters.q or '' }}&archived={{ filters.archived }}">→</a>{% endif %}
+</p>
+{% endif %}
+{% endblock %}

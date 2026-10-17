@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Задачи — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Задачи</h1>
+<div class="toolbar">
+  <a class="btn {% if filters.view=='active' %}btn-primary{% endif %}" href="/tasks?view=active">Активные</a>
+  <a class="btn {% if filters.view=='done' %}btn-primary{% endif %}" href="/tasks?view=done">Выполненные</a>
+  <a class="btn {% if filters.view=='all' %}btn-primary{% endif %}" href="/tasks?view=all">Все</a>
+  <a class="btn btn-primary" href="/tasks/new">+ Задача</a>
+  <form method="post" action="/exports/tasks"><button class="btn" type="submit">Экспорт</button></form>
+</div>
+
+<form class="quick-add card" method="post" action="/tasks/quick">
+  <input name="title" placeholder="Быстрая задача…" required style="flex:1;min-width:200px">
+  <input type="date" name="due_date">
+  <button class="btn btn-primary" type="submit">Добавить</button>
+</form>
+
+{% macro group(title, key, css='') %}
+<section class="card">
+  <h2>{{ title }}</h2>
+  {% set items = grouped.get(key, []) %}
+  {% if not items %}<p class="empty">Пусто</p>{% endif %}
+  {% for t in items %}
+  <div class="task-line {{ css }} {% if t.is_done %}done{% endif %}">
+    <form method="post" action="/tasks/{{ t.id }}/toggle"><button class="btn btn-sm" type="submit">✓</button></form>
+    <div style="flex:1">
+      <a href="/tasks/{{ t.id }}/edit"><strong>{{ t.title }}</strong></a>
+      <div class="meta">
+        {{ TASK_TYPE_LABELS[t.task_type.value] }} · {{ t.due_at|fmt_dt or 'без срока' }}
+        {% if t.client_name %} · {{ t.client_name }}{% endif %}
+        {% if t.deal_title %} · {{ t.deal_title }}{% endif %}
+      </div>
+    </div>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/1h"><button class="btn btn-sm" type="submit">+1 ч</button></form>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/tomorrow"><button class="btn btn-sm" type="submit">Завтра</button></form>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/1w"><button class="btn btn-sm" type="submit">+1 нед</button></form>
+  </div>
+  {% endfor %}
+</section>
+{% endmacro %}
+
+{% if filters.view != 'done' %}
+{{ group('Просрочено', 'overdue', 'row-overdue') }}
+{{ group('Сегодня', 'today', 'row-today') }}
+{{ group('Предстоящие', 'upcoming') }}
+{{ group('Без срока', 'no_due') }}
+{% endif %}
+{% if filters.view != 'active' %}
+{{ group('Выполненные', 'done') }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ deal.title }} — Mini-CRM{% endblock %}
+{% block content %}
+<h1>{{ deal.title }} <span class="badge {{ deal.status.value }}">{{ DEAL_STATUS_LABELS[deal.status.value] }}</span></h1>
+<div class="actions">
+  <a class="btn" href="/deals/{{ deal.id }}/edit">Редактировать</a>
+  <a class="btn btn-primary" href="/orders/new?deal_id={{ deal.id }}{% if deal.client_id %}&client_id={{ deal.client_id }}{% endif %}">Создать заказ</a>
+  <a class="btn" href="/tasks/new?deal_id={{ deal.id }}{% if deal.client_id %}&client_id={{ deal.client_id }}{% endif %}">+ Задача</a>
+  <form method="post" action="/deals/{{ deal.id }}/delete"
+        onsubmit="return confirm('Удалить сделку? Будут удалены {{ impact.tasks }} задач. {{ impact.orders }} заказов останутся.')">
+    <button class="btn btn-danger" type="submit">Удалить</button>
+  </form>
+</div>
+
+<div class="card grid-2">
+  <div>
+    <p><span class="muted">Сумма:</span> {{ deal.amount|fmt_money }}</p>
+    <p><span class="muted">План. закрытие:</span> {{ deal.expected_close_date|fmt_date or '—' }}</p>
+    <p><span class="muted">Закрыта:</span> {{ deal.closed_at|fmt_dt or '—' }}</p>
+    {% if deal.lost_reason %}<p><span class="muted">Причина:</span> {{ deal.lost_reason }}</p>{% endif %}
+  </div>
+  <div>
+    <h2>Клиент</h2>
+    {% if deal.client_id and not deal.client_deleted %}
+    <p><a href="/clients/{{ deal.client_id }}">{{ deal.client_name }}</a>
+      {% if deal.client_archived %}<span class="badge">архив</span>{% endif %}</p>
+    <form method="post" action="/deals/{{ deal.id }}/detach"
+          onsubmit="return confirm('Открепить клиента? Заказы и задачи сделки сохранят свои связи.')">
+      <button class="btn btn-sm" type="submit">Открепить</button>
+    </form>
+    {% else %}
+    <p class="muted">{{ deal.client_name or 'Без клиента' }}</p>
+    <form method="post" action="/deals/{{ deal.id }}/attach" class="stack">
+      <label>ID клиента<input name="client_id" type="number" required></label>
+      <button class="btn btn-sm" type="submit">Прикрепить</button>
+    </form>
+    <a href="/clients/new">Создать нового клиента</a>
+    {% endif %}
+    <form method="post" action="/deals/{{ deal.id }}/status" style="margin-top:1rem">
+      <label>Статус
+        <select name="status" onchange="this.form.submit()">
+          {% for s in statuses %}
+          <option value="{{ s.value }}" {% if deal.status==s %}selected{% endif %}>{{ DEAL_STATUS_LABELS[s.value] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Причина проигрыша<input name="lost_reason" value="{{ deal.lost_reason or '' }}"></label>
+    </form>
+  </div>
+</div>
+{% if deal.description %}<div class="card"><p>{{ deal.description }}</p></div>{% endif %}
+
+<section class="card">
+  <h2>Заказы</h2>
+  {% for o in orders %}
+  <div class="task-line"><a href="/orders/{{ o.id }}">{{ o.number }} — {{ o.title }}</a>
+    <span class="badge {{ o.status.value }}">{{ ORDER_STATUS_LABELS[o.status.value] }}</span></div>
+  {% else %}<p class="empty">Нет заказов</p>{% endfor %}
+</section>
+<section class="card">
+  <h2>Задачи</h2>
+  {% for t in tasks %}
+  <div class="task-line {% if t.is_done %}done{% endif %}">
+    <form method="post" action="/tasks/{{ t.id }}/toggle"><button class="btn btn-sm" type="submit">✓</button></form>
+    <a href="/tasks/{{ t.id }}/edit">{{ t.title }}</a>
+    <span class="meta">{{ t.due_at|fmt_dt }}</span>
+  </div>
+  {% else %}<p class="empty">Нет задач</p>{% endfor %}
+</section>
+{% endblock %}

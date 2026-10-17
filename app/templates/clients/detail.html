@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }} — Mini-CRM{% endblock %}
+{% block content %}
+<h1>
+  {{ client.name }}
+  <span class="badge {{ client.status.value }}">{{ CLIENT_STATUS_LABELS[client.status.value] }}</span>
+  {% if client.is_archived %}<span class="badge">В архиве</span>{% endif %}
+</h1>
+<div class="actions">
+  <a class="btn" href="/clients/{{ client.id }}/edit">Редактировать</a>
+  {% if client.is_archived %}
+  <form method="post" action="/clients/{{ client.id }}/unarchive"><button class="btn" type="submit">Из архива</button></form>
+  {% else %}
+  <form method="post" action="/clients/{{ client.id }}/archive"
+        onsubmit="return confirm('Архивировать клиента? Открытых сделок: {{ impact.open_deals }}, задач: {{ impact.open_tasks }}')">
+    <button class="btn" type="submit">В архив</button>
+  </form>
+  {% endif %}
+  <form method="post" action="/clients/{{ client.id }}/delete"
+        onsubmit="return confirm('Удалить клиента «{{ client.name }}»? Будут удалены {{ impact.tasks }} задач. {{ impact.deals }} сделок и {{ impact.orders }} заказов останутся.')">
+    <button class="btn btn-danger" type="submit">Удалить</button>
+  </form>
+  <a class="btn btn-primary" href="/deals/new?client_id={{ client.id }}">+ Сделка</a>
+  <a class="btn" href="/orders/new?client_id={{ client.id }}">+ Заказ</a>
+  <a class="btn" href="/tasks/new?client_id={{ client.id }}">+ Задача</a>
+</div>
+
+<div class="card grid-2">
+  <div>
+    <p><span class="muted">Тип:</span> {{ CLIENT_TYPE_LABELS[client.client_type.value] }}</p>
+    <p><span class="muted">Контакт:</span> {{ client.contact_person or '—' }}</p>
+    <p><span class="muted">Телефон:</span> {{ client.phone or '—' }}</p>
+    <p><span class="muted">Email:</span> {{ client.email or '—' }}</p>
+  </div>
+  <div>
+    <p><span class="muted">Источник:</span> {{ client.source or '—' }}</p>
+    <p><span class="muted">Создан:</span> {{ client.created_at|fmt_dt }}</p>
+    <p><span class="muted">Изменён:</span> {{ client.updated_at|fmt_dt }}</p>
+    <form method="post" action="/clients/{{ client.id }}/status">
+      <label>Статус
+        <select name="status" onchange="this.form.submit()">
+          {% for s in statuses %}
+          <option value="{{ s.value }}" {% if client.status==s %}selected{% endif %}>{{ CLIENT_STATUS_LABELS[s.value] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+  </div>
+</div>
+{% if client.notes %}<div class="card"><h2>Заметки</h2><p>{{ client.notes }}</p></div>{% endif %}
+
+<section class="card">
+  <h2>Сделки ({{ deals|length }})</h2>
+  {% for d in deals %}
+  <div class="task-line">
+    <a href="/deals/{{ d.id }}">{{ d.title }}</a>
+    <span class="badge {{ d.status.value }}">{{ DEAL_STATUS_LABELS[d.status.value] }}</span>
+    <span class="meta">{{ d.amount|fmt_money }}</span>
+  </div>
+  {% else %}<p class="empty">Нет сделок</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>Заказы ({{ orders|length }})</h2>
+  {% for o in orders %}
+  <div class="task-line">
+    <a href="/orders/{{ o.id }}">{{ o.number }} — {{ o.title }}</a>
+    <span class="badge {{ o.status.value }}">{{ ORDER_STATUS_LABELS[o.status.value] }}</span>
+  </div>
+  {% else %}<p class="empty">Нет заказов</p>{% endfor %}
+</section>
+
+<section class="card">
+  <h2>Задачи ({{ tasks|length }})</h2>
+  {% for t in tasks %}
+  <div class="task-line {% if t.due_state=='overdue' %}row-overdue{% elif t.due_state=='today' %}row-today{% endif %} {% if t.is_done %}done{% endif %}">
+    <form method="post" action="/tasks/{{ t.id }}/toggle"><button class="btn btn-sm" type="submit">✓</button></form>
+    <a href="/tasks/{{ t.id }}/edit">{{ t.title }}</a>
+    <span class="meta">{{ t.due_at|fmt_dt }} · {{ DUE_STATE_LABELS.get(t.due_state, t.due_state) }}</span>
+  </div>
+  {% else %}<p class="empty">Нет задач</p>{% endfor %}
+</section>
+{% endblock %}

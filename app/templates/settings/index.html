@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Настройки — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Настройки</h1>
+
+<section class="card">
+  <h2>Экспорт в Google Sheets</h2>
+  {% if not status.configured %}
+  <div class="flash error">
+    Экспорт не настроен администратором. Не хватает переменных:
+    {{ status.missing|join(', ') }}
+  </div>
+  {% elif not status.connected %}
+  <p>Статус: <strong>Не подключено</strong></p>
+  <a class="btn btn-primary" href="/settings/google/oauth/start">Подключить Google</a>
+  {% elif status.status == 'reauth_required' %}
+  <p class="flash error">Требуется переподключение
+    {% if status.last_error %}— {{ status.last_error }}{% endif %}
+  </p>
+  <a class="btn btn-primary" href="/settings/google/oauth/start">Переподключить Google</a>
+  {% else %}
+  <p>Статус: <strong>Подключено: {{ status.account_email }}</strong></p>
+  <div class="actions">
+    <form method="post" action="/settings/google/check"><button class="btn" type="submit">Проверить подключение</button></form>
+    <a class="btn" href="/settings/google/oauth/start">Переподключить</a>
+    <form method="post" action="/settings/google/disconnect"
+          onsubmit="return confirm('Отключить Google?')">
+      <button class="btn btn-danger" type="submit">Отключить</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if status.connected %}
+  <h2>Папка выгрузок</h2>
+  {% if status.folder_id %}
+  <p>
+    <strong>{{ status.folder_name }}</strong>
+    · <a href="{{ status.folder_url }}" target="_blank" rel="noopener">Открыть в Google Drive</a>
+    · ID: <code>{{ status.folder_id }}</code>
+  </p>
+  {% else %}
+  <p class="muted">Папка ещё не задана</p>
+  {% endif %}
+  <form method="post" action="/settings/google/folder" class="stack" style="max-width:520px">
+    <label>Ссылка или ID папки
+      <input name="folder_url" placeholder="https://drive.google.com/drive/folders/...">
+    </label>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+  <form method="post" action="/settings/google/folder/create" style="margin-top:0.75rem">
+    <button class="btn" type="submit">Создать новую папку «CRM Экспорт»</button>
+  </form>
+  <p class="meta">Папку, созданную вручную, выберите через Google Picker
+    (кнопка ниже — если настроены Picker API key и project number).</p>
+  {% if status.picker_ready %}
+  <button class="btn" type="button" id="pick-folder">Выбрать другую папку</button>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="/static/picker.js"></script>
+  {% endif %}
+  {% endif %}
+
+  <details style="margin-top:1rem">
+    <summary>Инструкция по подключению Google Cloud</summary>
+    <ol class="meta">
+      <li>Создайте проект в Google Cloud Console и включите Drive API, Sheets API, Picker API.</li>
+      <li>Настройте OAuth consent screen: scopes openid, userinfo.email, drive.file.</li>
+      <li>Для @gmail.com переведите приложение в статус «In production» (иначе refresh token живёт 7 дней).</li>
+      <li>Создайте OAuth Client (Web application) с redirect URI
+        <code>{{ request.base_url }}settings/google/oauth/callback</code>.</li>
+      <li>Задайте переменные окружения из .env.example и перезапустите приложение.</li>
+    </ol>
+  </details>
+</section>
+
+<section class="card">
+  <h2>Журнал выгрузок</h2>
+  {% if not logs %}
+  <p class="empty">Выгрузок ещё не было</p>
+  {% else %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Когда</th><th>Сущность</th><th>Файл</th><th>Строк</th><th>Статус</th></tr></thead>
+    <tbody>
+    {% for r in logs %}
+    <tr>
+      <td>{{ r.created_at|fmt_dt }}</td>
+      <td>{{ r.entity }}</td>
+      <td>{% if r.file_url %}<a href="{{ r.file_url }}" target="_blank" rel="noopener">{{ r.file_name }}</a>{% else %}{{ r.file_name or '—' }}{% endif %}</td>
+      <td>{{ r.rows or '—' }}</td>
+      <td>{{ r.status }}{% if r.error_code %} ({{ r.error_code }}){% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Система</h2>
+  <p>Версия: {{ version }}</p>
+  <p>Последний бэкап: {{ last_backup or 'ещё не создавался' }}</p>
+</section>
+{% endblock %}

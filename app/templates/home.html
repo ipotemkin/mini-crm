@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Сегодня — Mini-CRM{% endblock %}
+{% block content %}
+<h1>Сегодня</h1>
+
+<form class="quick-add card" method="post" action="/tasks/quick">
+  <input name="title" placeholder="Быстрая задача…" required style="flex:1;min-width:200px">
+  <input type="date" name="due_date">
+  <button class="btn btn-primary" type="submit">Добавить</button>
+  <a class="btn" href="/tasks/new">Подробнее</a>
+</form>
+
+{% macro task_group(title, items, css) %}
+<section class="card">
+  <h2>{{ title }} <span class="muted">({{ items|length }})</span></h2>
+  {% if not items %}
+  <p class="empty">Нет задач</p>
+  {% else %}
+  {% for t in items %}
+  <div class="task-line {{ css }} {% if t.is_done %}done{% endif %}">
+    <form method="post" action="/tasks/{{ t.id }}/toggle">
+      <button class="btn btn-sm" type="submit">{% if t.is_done %}↩{% else %}✓{% endif %}</button>
+    </form>
+    <div style="flex:1">
+      <strong>{{ t.title }}</strong>
+      <div class="meta">
+        {{ t.due_at|fmt_dt }}
+        {% if t.client_name %} · <a href="/clients/{{ t.client_id }}">{{ t.client_name }}</a>{% endif %}
+        {% if t.deal_title %} · <a href="/deals/{{ t.deal_id }}">{{ t.deal_title }}</a>{% endif %}
+      </div>
+    </div>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/1h"><button class="btn btn-sm" type="submit">+1 ч</button></form>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/tomorrow"><button class="btn btn-sm" type="submit">Завтра</button></form>
+    <form method="post" action="/tasks/{{ t.id }}/snooze/1w"><button class="btn btn-sm" type="submit">+1 нед</button></form>
+  </div>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endmacro %}
+
+{{ task_group("Просрочено", overdue, "row-overdue") }}
+{{ task_group("Сегодня", today_tasks, "row-today") }}
+{{ task_group("Предстоящие 7 дней", upcoming, "") }}
+
+<section class="card">
+  <h2>Открытые сделки</h2>
+  <p class="meta">Сумма открытых: {{ open_deals_sum|fmt_kopecks }}</p>
+  {% if not open_deals %}
+  <p class="empty">Открытых сделок нет — <a href="/deals/new">создайте первую</a></p>
+  {% else %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Название</th><th>Клиент</th><th>Статус</th><th>Сумма</th></tr></thead>
+      <tbody>
+      {% for d in open_deals %}
+        <tr>
+          <td><a href="/deals/{{ d.id }}">{{ d.title }}</a></td>
+          <td>{% if d.client_id %}<a href="/clients/{{ d.client_id }}">{{ d.client_name }}</a>{% else %}—{% endif %}</td>
+          <td><span class="badge {{ d.status.value }}">{{ DEAL_STATUS_LABELS[d.status.value] }}</span></td>
+          <td>{% if d.amount %}{{ d.amount }}{% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

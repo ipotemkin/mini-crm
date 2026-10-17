@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ order.number }} — Mini-CRM{% endblock %}
+{% block content %}
+<h1>{{ order.number }} — {{ order.title }}
+  <span class="badge {{ order.status.value }}">{{ ORDER_STATUS_LABELS[order.status.value] }}</span>
+</h1>
+<div class="actions">
+  <a class="btn" href="/orders/{{ order.id }}/edit">Редактировать</a>
+  <form method="post" action="/orders/{{ order.id }}/delete" onsubmit="return confirm('Удалить заказ?')">
+    <button class="btn btn-danger" type="submit">Удалить</button>
+  </form>
+</div>
+<div class="card grid-2">
+  <div>
+    <p><span class="muted">Сумма:</span> {{ order.amount|fmt_money }}</p>
+    <p><span class="muted">Дата заказа:</span> {{ order.order_date|fmt_date }}</p>
+    <p><span class="muted">План. исполнение:</span> {{ order.due_date|fmt_date or '—' }}</p>
+  </div>
+  <div>
+    <p><span class="muted">Клиент:</span>
+      {% if order.client_id %}<a href="/clients/{{ order.client_id }}">{{ order.client_name }}</a>{% else %}—{% endif %}</p>
+    <p><span class="muted">Сделка:</span>
+      {% if order.deal_id %}<a href="/deals/{{ order.deal_id }}">{{ order.deal_title }}</a>{% else %}—{% endif %}</p>
+    <p><span class="muted">Создан:</span> {{ order.created_at|fmt_dt }}</p>
+  </div>
+</div>
+{% if order.comment %}<div class="card"><p>{{ order.comment }}</p></div>{% endif %}
+{% endblock %}

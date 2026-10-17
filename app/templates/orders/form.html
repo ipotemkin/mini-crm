@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Заказ — Mini-CRM{% endblock %}
+{% block content %}
+<h1>{% if order %}Редактирование заказа {{ order.number }}{% else %}Новый заказ{% endif %}</h1>
+<form class="card stack" method="post" action="{% if order %}/orders/{{ order.id }}/edit{% else %}/orders/new{% endif %}">
+  <label>Название *<input name="title" required value="{{ order.title if order else '' }}"></label>
+  <div class="grid-2">
+    <label>ID клиента<input type="number" name="client_id" value="{{ order.client_id if order and order.client_id else (client_id or '') }}"></label>
+    <label>ID сделки<input type="number" name="deal_id" value="{{ order.deal_id if order and order.deal_id else (deal_id or '') }}"></label>
+  </div>
+  <div class="grid-2">
+    <label>Сумма<input name="amount" value="{{ order.amount if order and order.amount is not none else '' }}"></label>
+    <label>Статус
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}" {% if order and order.status==s %}selected{% endif %}>{{ ORDER_STATUS_LABELS[s.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="grid-2">
+    <label>Дата заказа<input type="date" name="order_date" value="{{ order.order_date if order else '' }}"></label>
+    <label>План. исполнение<input type="date" name="due_date" value="{{ order.due_date if order and order.due_date else '' }}"></label>
+  </div>
+  <label>Комментарий<textarea name="comment">{{ order.comment if order else '' }}</textarea></label>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">Сохранить</button>
+    <a class="btn" href="{% if order %}/orders/{{ order.id }}{% else %}/orders{% endif %}">Отмена</a>
+  </div>
+</form>
+{% endblock %}

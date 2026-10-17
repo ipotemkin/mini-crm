@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{% if client %}Редактирование{% else %}Новый клиент{% endif %} — Mini-CRM{% endblock %}
+{% block content %}
+<h1>{% if client %}Редактирование клиента{% else %}Новый клиент{% endif %}</h1>
+{% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+{% set f = form if form is defined and form else {} %}
+<form class="card stack" method="post" action="{% if client %}/clients/{{ client.id }}/edit{% else %}/clients/new{% endif %}">
+  <label>Имя / название *
+    <input name="name" required maxlength="200"
+           value="{{ client.name if client else f.get('name','') }}">
+  </label>
+  <div class="grid-2">
+    <label>Тип
+      <select name="client_type">
+        {% for t in types %}
+        <option value="{{ t.value }}"
+          {% if (client and client.client_type==t) or f.get('client_type')==t.value %}selected{% endif %}>
+          {{ CLIENT_TYPE_LABELS[t.value] }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Статус
+      <select name="status">
+        {% for s in statuses %}
+        <option value="{{ s.value }}"
+          {% if (client and client.status==s) or f.get('status')==s.value %}selected{% endif %}>
+          {{ CLIENT_STATUS_LABELS[s.value] }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <label>Контактное лицо
+    <input name="contact_person" maxlength="200"
+           value="{{ client.contact_person if client else f.get('contact_person','') }}">
+  </label>
+  <div class="grid-2">
+    <label>Телефон
+      <input name="phone" maxlength="32"
+             value="{{ client.phone if client else f.get('phone','') }}">
+    </label>
+    <label>Email
+      <input type="email" name="email" maxlength="254"
+             value="{{ client.email if client else f.get('email','') }}">
+    </label>
+  </div>
+  <label>Источник
+    <input name="source" maxlength="100"
+           value="{{ client.source if client else f.get('source','') }}">
+  </label>
+  <label>Заметки
+    <textarea name="notes" maxlength="5000">{{ client.notes if client else f.get('notes','') }}</textarea>
+  </label>
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">Сохранить</button>
+    <a class="btn" href="{% if client %}/clients/{{ client.id }}{% else %}/clients{% endif %}">Отмена</a>
+  </div>
+</form>
+{% endblock %}
